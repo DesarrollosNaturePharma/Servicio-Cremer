@@ -1,0 +1,55 @@
+# ==========================================
+# .dockerignore - Archivos a excluir del build
+# ==========================================
+
+# Target (builds previos)
+target/
+!target/*.jar
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.settings/
+.classpath
+.project
+.factorypath
+
+# Logs
+*.log
+logs/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# CI/CD
+Jenkinsfile
+.github/
+.gitlab-ci.yml
+
+# Documentación
+*.md
+README*
+docs/
+
+# Tests
+src/test/
+
+# Otros
+*.tmp
+*.bak
+*.swp
+*~

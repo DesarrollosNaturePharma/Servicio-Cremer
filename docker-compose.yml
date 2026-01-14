@@ -1,0 +1,57 @@
+# ==========================================
+# Docker Compose - Producción
+# ==========================================
+# Este compose solo incluye la aplicación.
+# PostgreSQL ya está corriendo en db_infrastructure_network
+# ==========================================
+
+services:
+  cremer-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cremer-service:latest
+    container_name: cremer-service
+    ports:
+      - "8600:8600"
+    environment:
+      # Perfil de Spring Boot
+      - SPRING_PROFILES_ACTIVE=prod
+
+      # Configuración de PostgreSQL (infraestructura existente)
+      - DB_URL=jdbc:postgresql://postgres_server:5432/cremer_db
+      - DB_USERNAME=informatica
+      - DB_PASSWORD=Pharma2024
+
+      # Opciones de JVM
+      - JAVA_OPTS=-Xmx512m -Xms256m
+
+      # Timezone
+      - TZ=Europe/Madrid
+
+    # Conectar a la red de infraestructura de BD existente
+    networks:
+      - db_infrastructure_network
+
+    # Política de reinicio
+    restart: unless-stopped
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8600/actuator/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 60s
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Red externa de infraestructura de BD
+networks:
+  db_infrastructure_network:
+    external: true

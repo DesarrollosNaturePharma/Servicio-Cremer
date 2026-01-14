@@ -1,0 +1,48 @@
+﻿# ==========================================
+# CONFIGURACI�N COM�N
+# ==========================================
+spring.application.name=cremer-service
+spring.profiles.active=dev
+server.port=8080
+server.servlet.context-path=/api
+
+# ==========================================
+# MySQL - Desarrollo
+# ==========================================
+spring.datasource.url=jdbc:mysql://127.0.0.1:3309/cremer_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+spring.datasource.username=rnp_dev
+spring.datasource.password=rnp_dev_pass_2024
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# Pool de conexiones Hikari
+spring.datasource.hikari.maximum-pool-size=10
+spring.datasource.hikari.minimum-idle=5
+spring.datasource.hikari.connection-timeout=30000
+spring.datasource.hikari.idle-timeout=600000
+
+# ==========================================
+# JPA / Hibernate
+# ==========================================
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.open-in-view=false
+
+# ==========================================
+# Logging
+# ==========================================
+logging.level.root=INFO
+logging.level.org.springframework.web=DEBUG
+logging.level.org.hibernate.SQL=DEBUG
+logging.level.com.rnp.cremer=DEBUG
+
+# ==========================================
+# SpringDoc OpenAPI / Swagger
+# ==========================================
+springdoc.swagger-ui.enabled=true
+
+# ==========================================
+# DevTools
+# ==========================================
+spring.devtools.restart.enabled=true
+spring.devtools.livereload.enabled=true
