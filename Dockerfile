@@ -5,10 +5,13 @@ FROM eclipse-temurin:17-jdk-alpine AS builder
 
 WORKDIR /app
 
-# Copiar archivos de Maven
+# Copiar archivos de Maven (para cachear dependencias)
 COPY pom.xml .
 COPY mvnw .
 COPY .mvn .mvn
+
+# Dar permisos de ejecución al Maven Wrapper (soluciona Permission denied)
+RUN chmod +x mvnw
 
 # Descargar dependencias (capa cacheada)
 RUN ./mvnw dependency:go-offline -B
@@ -19,12 +22,16 @@ COPY src ./src
 # Construir la aplicación
 RUN ./mvnw clean package -DskipTests -B
 
+
 # ==========================================
 # STAGE 2: Runtime
 # ==========================================
 FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
+
+# Necesario para HEALTHCHECK (wget no viene siempre por defecto en alpine)
+RUN apk add --no-cache wget
 
 # Crear usuario no-root para seguridad
 RUN addgroup -S spring && adduser -S spring -G spring
