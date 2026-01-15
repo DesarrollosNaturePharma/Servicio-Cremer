@@ -20,8 +20,8 @@ services:
 
       # Configuración de PostgreSQL (infraestructura existente)
       - DB_URL=jdbc:postgresql://postgres_server:5432/cremer_db
-      - DB_USERNAME=informatica
-      - DB_PASSWORD=Pharma2024
+      - DB_USERNAME=myuser
+      - DB_PASSWORD=mypassword
 
       # Opciones de JVM
       - JAVA_OPTS=-Xmx512m -Xms256m
