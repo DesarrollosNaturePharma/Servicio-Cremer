@@ -19,7 +19,7 @@ services:
       - SPRING_PROFILES_ACTIVE=prod
 
       # Configuración de PostgreSQL (infraestructura existente)
-      - DB_URL=jdbc:postgresql://postgresql:5432/cremer_db
+      - DB_URL=jdbc:postgresql://postgres:5432/cremer_db
       - DB_USERNAME=myuser
       - DB_PASSWORD=mypassword
 
