@@ -78,4 +78,9 @@ public interface PauseRepository extends JpaRepository<Pause, Long> {
     ORDER BY p.horaInicio DESC
     """)
 List<Pause> findActivePausesExcludingFabricacionParcial();
+
+    /**
+     * Elimina todas las pausas asociadas a una orden.
+     */
+    void deleteByIdOrder(Long idOrder);
 }

@@ -41,4 +41,9 @@ public interface BottleCounterRepository extends JpaRepository<BottleCounter, Lo
     @Modifying
     @Query("UPDATE BottleCounter bc SET bc.isActive = false WHERE bc.isActive = true")
     void deactivateAllCounters();
+
+    /**
+     * Elimina el contador asociado a una orden.
+     */
+    void deleteByIdOrder(Long idOrder);
 }
