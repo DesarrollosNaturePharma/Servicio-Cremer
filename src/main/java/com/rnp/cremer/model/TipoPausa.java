@@ -18,6 +18,12 @@ public enum TipoPausa {
     INCIDENCIA_MAQUINA_OTROS,
 
     // ============================================
+    // AVERÍAS AUTOMÁTICAS (detectadas por GPIO)
+    // ============================================
+    AVERIA_PONDERAL,      // GPIO 22 - Detectada automáticamente
+    AVERIA_ETIQUETA,      // GPIO 19 - Detectada automáticamente
+
+    // ============================================
     // PROBLEMAS DE MATERIAL
     // ============================================
     FALTA_MATERIAL,
@@ -74,5 +80,12 @@ public enum TipoPausa {
      */
     public boolean esPausaOperativa() {
         return !computa();
+    }
+
+    /**
+     * Indica si es una avería automática detectada por GPIO.
+     */
+    public boolean esAveriaAutomatica() {
+        return this == AVERIA_PONDERAL || this == AVERIA_ETIQUETA;
     }
 }
