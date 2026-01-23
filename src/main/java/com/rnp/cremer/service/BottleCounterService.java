@@ -197,10 +197,15 @@ public class BottleCounterService {
         Integer previousValue = pinStates.get(pin);
         pinStates.put(pin, value);
 
-        // Solo detectar flancos si el pin ya fue inicializado
+        // Si el pin no está inicializado, inicializarlo con el primer mensaje
+        // Esto soluciona el problema de reinicio donde la Raspberry no envía array inicial
         if (!pinInitialized.get()) {
-            log.debug("⏳ Esperando inicialización del pin antes de detectar flancos");
-            return;
+            if (previousValue == null) {
+                // Primera vez que vemos este pin - solo guardamos el estado inicial
+                log.info("🎯 Pin {} inicializado con valor: {} (primer mensaje individual)", pin, value);
+                pinInitialized.set(true);
+                return;
+            }
         }
 
         // Detectar flanco de bajada (1 → 0)
