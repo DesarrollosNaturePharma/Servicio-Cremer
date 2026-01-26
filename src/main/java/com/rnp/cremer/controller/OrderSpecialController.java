@@ -95,4 +95,26 @@ public class OrderSpecialController {
 
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * Recalcula los tiempos estimados de todas las órdenes.
+     * Útil para corregir datos históricos cuando se modifica la fórmula de cálculo.
+     */
+    @PostMapping("/recalcular-tiempos")
+    @Operation(
+            summary = "Recalcular tiempos estimados",
+            description = "Recalcula los tiempos estimados y cajas previstas de todas las órdenes usando la fórmula actual"
+    )
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> recalcularTiemposEstimados() {
+        log.info("POST /orders/special/recalcular-tiempos");
+
+        java.util.Map<String, Object> resultado = orderService.recalcularTiemposEstimados();
+
+        ApiResponse<java.util.Map<String, Object>> response = ApiResponse.success(
+                "Tiempos estimados recalculados exitosamente",
+                resultado
+        );
+
+        return ResponseEntity.ok(response);
+    }
 }

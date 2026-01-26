@@ -162,15 +162,18 @@ public class OrderService {
         return (float) cantidad / botesCaja;
     }
 
-    /**
-     * Calcula el tiempo estimado según la cantidad y el estándar de referencia.
-     */
-    private Float calculateTiempoEstimado(Integer cantidad, Float stdReferencia) {
-        if (stdReferencia == null) {
-            return 0.0f;
-        }
-        return cantidad * stdReferencia;
+/**
+ * Calcula el tiempo estimado según la cantidad y el estándar de referencia.
+ * @param cantidad número de botes a producir
+ * @param stdReferencia tasa de producción en botes/minuto
+ * @return tiempo estimado en minutos
+ */
+private Float calculateTiempoEstimado(Integer cantidad, Float stdReferencia) {
+    if (stdReferencia == null || stdReferencia == 0) {
+        return 0.0f;
     }
+    return cantidad / stdReferencia;  // ← DIVISIÓN (no multiplicación)
+}
 
     // ========================================
     // INICIO DE PRODUCCIÓN
@@ -734,5 +737,66 @@ public class OrderService {
         }
 
         return responseList;
+    }
+
+    /**
+     * Recalcula los tiempos estimados de todas las órdenes.
+     * Útil cuando se corrige la fórmula de cálculo y se necesita actualizar datos históricos.
+     *
+     * @return mapa con estadísticas del recálculo (total, actualizadas, sin cambios)
+     */
+    @Transactional
+    public Map<String, Object> recalcularTiemposEstimados() {
+        log.info("Iniciando recálculo de tiempos estimados para todas las órdenes");
+
+        List<Order> orders = orderRepository.findAll();
+        int totalOrders = orders.size();
+        int actualizadas = 0;
+        int sinCambios = 0;
+        List<Map<String, Object>> detalles = new ArrayList<>();
+
+        for (Order order : orders) {
+            Float tiempoAnterior = order.getTiempoEstimado();
+            Float tiempoNuevo = calculateTiempoEstimado(order.getCantidad(), order.getStdReferencia());
+
+            // También recalcular cajas previstas por si acaso
+            Float cajasAnterior = order.getCajasPrevistas();
+            Float cajasNuevo = calculateCajasPrevistas(order.getCantidad(), order.getBotesCaja());
+
+            boolean cambioTiempo = !Objects.equals(tiempoAnterior, tiempoNuevo);
+            boolean cambioCajas = !Objects.equals(cajasAnterior, cajasNuevo);
+
+            if (cambioTiempo || cambioCajas) {
+                order.setTiempoEstimado(tiempoNuevo);
+                order.setCajasPrevistas(cajasNuevo);
+                orderRepository.save(order);
+                actualizadas++;
+
+                Map<String, Object> detalle = new HashMap<>();
+                detalle.put("idOrder", order.getIdOrder());
+                detalle.put("codOrder", order.getCodOrder());
+                detalle.put("tiempoAnterior", tiempoAnterior);
+                detalle.put("tiempoNuevo", tiempoNuevo);
+                detalle.put("cajasAnterior", cajasAnterior);
+                detalle.put("cajasNuevo", cajasNuevo);
+                detalles.add(detalle);
+
+                log.debug("Orden {} actualizada: tiempo {} -> {}, cajas {} -> {}",
+                        order.getCodOrder(), tiempoAnterior, tiempoNuevo, cajasAnterior, cajasNuevo);
+            } else {
+                sinCambios++;
+            }
+        }
+
+        log.info("Recálculo completado - Total: {}, Actualizadas: {}, Sin cambios: {}",
+                totalOrders, actualizadas, sinCambios);
+
+        Map<String, Object> resultado = new HashMap<>();
+        resultado.put("totalOrdenes", totalOrders);
+        resultado.put("actualizadas", actualizadas);
+        resultado.put("sinCambios", sinCambios);
+        resultado.put("detalles", detalles);
+
+        return resultado;
     }
 }
