@@ -808,4 +808,58 @@ private Float calculateTiempoEstimado(Integer cantidad, Float stdReferencia) {
 
         return resultado;
     }
+
+    /**
+     * Recalcula los tiempos estimados de todas las órdenes sumando las pausas no computables finalizadas.
+     * Útil para corregir datos históricos tras añadir la lógica de extensión por pausas no computables.
+     */
+    @Transactional
+    public Map<String, Object> recalcularTiemposEstimadosConPausas() {
+        log.info("Iniciando recálculo de tiempos estimados con pausas no computables");
+
+        List<Order> orders = orderRepository.findAll();
+        int totalOrders = orders.size();
+        int actualizadas = 0;
+        int sinCambios = 0;
+        List<Map<String, Object>> detalles = new ArrayList<>();
+
+        for (Order order : orders) {
+            Float tiempoBase = calculateTiempoEstimado(order.getCantidad(), order.getStdReferencia());
+            Float pausasNoComputables = pauseRepository.getNonComputedPauseTimeByOrder(order.getIdOrder());
+
+            Float tiempoNuevo = tiempoBase + pausasNoComputables;
+            Float tiempoAnterior = order.getTiempoEstimado();
+
+            if (!Objects.equals(tiempoAnterior, tiempoNuevo)) {
+                order.setTiempoEstimado(tiempoNuevo);
+                orderRepository.save(order);
+                actualizadas++;
+
+                Map<String, Object> detalle = new HashMap<>();
+                detalle.put("idOrder", order.getIdOrder());
+                detalle.put("codOrder", order.getCodOrder());
+                detalle.put("tiempoBase", tiempoBase);
+                detalle.put("pausasNoComputables", pausasNoComputables);
+                detalle.put("tiempoAnterior", tiempoAnterior);
+                detalle.put("tiempoNuevo", tiempoNuevo);
+                detalles.add(detalle);
+
+                log.debug("Orden {} actualizada: {} -> {} (base: {} + pausas: {})",
+                        order.getCodOrder(), tiempoAnterior, tiempoNuevo, tiempoBase, pausasNoComputables);
+            } else {
+                sinCambios++;
+            }
+        }
+
+        log.info("Recálculo con pausas completado - Total: {}, Actualizadas: {}, Sin cambios: {}",
+                totalOrders, actualizadas, sinCambios);
+
+        Map<String, Object> resultado = new HashMap<>();
+        resultado.put("totalOrdenes", totalOrders);
+        resultado.put("actualizadas", actualizadas);
+        resultado.put("sinCambios", sinCambios);
+        resultado.put("detalles", detalles);
+
+        return resultado;
+    }
 }

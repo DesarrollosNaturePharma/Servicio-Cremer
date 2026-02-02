@@ -117,4 +117,26 @@ public class OrderSpecialController {
 
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * Recalcula los tiempos estimados de todas las órdenes sumando las pausas no computables.
+     * Útil para corregir datos históricos: tiempoEstimado = (cantidad/stdReferencia) + pausas no computables.
+     */
+    @PostMapping("/recalcular-tiempos-con-pausas")
+    @Operation(
+            summary = "Recalcular tiempos estimados con pausas no computables",
+            description = "Recalcula tiempoEstimado = (cantidad/stdReferencia) + suma de pausas no computables finalizadas. Para corregir órdenes históricas."
+    )
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> recalcularTiemposConPausas() {
+        log.info("POST /orders/special/recalcular-tiempos-con-pausas");
+
+        java.util.Map<String, Object> resultado = orderService.recalcularTiemposEstimadosConPausas();
+
+        ApiResponse<java.util.Map<String, Object>> response = ApiResponse.success(
+                "Tiempos estimados recalculados con pausas no computables exitosamente",
+                resultado
+        );
+
+        return ResponseEntity.ok(response);
+    }
 }
