@@ -152,6 +152,14 @@ public class PauseService {
         Order order = orderRepository.findById(idOrder)
                 .orElseThrow(() -> new IllegalArgumentException("Orden no encontrada"));
 
+        // Si la pausa NO computa, extender el tiempo estimado de la orden
+        if (Boolean.FALSE.equals(savedPause.getComputa()) && order.getTiempoEstimado() != null) {
+            float nuevoTiempoEstimado = order.getTiempoEstimado() + tiempoMinutos;
+            order.setTiempoEstimado(nuevoTiempoEstimado);
+            log.info("Pausa no computable finalizada - tiempoEstimado extendido de {} a {} minutos (+{} min)",
+                    order.getTiempoEstimado() - tiempoMinutos, nuevoTiempoEstimado, tiempoMinutos);
+        }
+
         EstadoOrder estadoAnterior = order.getEstado();
         order.setEstado(EstadoOrder.EN_PROCESO);
         Order updatedOrder = orderRepository.save(order);

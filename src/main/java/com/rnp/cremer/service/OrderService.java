@@ -351,6 +351,15 @@ private Float calculateTiempoEstimado(Integer cantidad, Float stdReferencia) {
 
             pauseRepository.save(pausaActiva);
             log.info("Pausa {} finalizada automáticamente", pausaActiva.getIdPausa());
+
+            // Si la pausa NO computa, extender el tiempo estimado de la orden
+            if (Boolean.FALSE.equals(pausaActiva.getComputa()) && order.getTiempoEstimado() != null) {
+                float tiempoMinutos = pausaActiva.getTiempoTotalPausa();
+                float nuevoTiempoEstimado = order.getTiempoEstimado() + tiempoMinutos;
+                order.setTiempoEstimado(nuevoTiempoEstimado);
+                log.info("Pausa no computable auto-finalizada - tiempoEstimado extendido de {} a {} minutos (+{} min)",
+                        order.getTiempoEstimado() - tiempoMinutos, nuevoTiempoEstimado, tiempoMinutos);
+            }
         }
     }
 
