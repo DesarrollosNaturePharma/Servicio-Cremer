@@ -33,6 +33,7 @@ public class PauseService {
     private final FabricacionParcialService fabricacionParcialService;
     private final PauseNonPartialService pauseNonPartialService;
     private final OrderQueryService orderQueryService;
+    private final BottleCounterService bottleCounterService;
 
     @Transactional
     public PauseResponseDto createPause(Long idOrder, PauseCreateDto dto) {
@@ -154,6 +155,9 @@ public class PauseService {
         EstadoOrder estadoAnterior = order.getEstado();
         order.setEstado(EstadoOrder.EN_PROCESO);
         Order updatedOrder = orderRepository.save(order);
+
+        // Reactivar el contador de botellas para esta orden
+        bottleCounterService.activateCounterForOrder(idOrder);
 
         log.info("Pausa {} finalizada - Tipo: {} - Computa: {} - Duración: {:.2f} minutos",
                 idPausa, savedPause.getTipo(), savedPause.getComputa(), tiempoMinutos);

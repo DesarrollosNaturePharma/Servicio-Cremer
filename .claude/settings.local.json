@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(^d \")"
+      "Bash(^d \")",
+      "Bash(cd:*)"
     ]
   }
 }

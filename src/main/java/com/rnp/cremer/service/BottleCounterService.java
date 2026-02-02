@@ -17,12 +17,14 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -51,9 +53,9 @@ public class BottleCounterService {
 
     private final BottleCounterRepository bottleCounterRepository;
     private final OrderRepository orderRepository;
-    private final OrderQueryService orderQueryService;
     private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper;
+    private final TransactionTemplate transactionTemplate;
 
     // WebSocket Client
     private WebSocketClient wsClient;
@@ -219,41 +221,61 @@ public class BottleCounterService {
     }
 
     /**
-     * Incrementa el contador de botellas si hay orden activa.
+     * Incrementa el contador de botellas si hay orden EN_PROCESO.
+     *
+     * <p>Usa TransactionTemplate en lugar de @Transactional porque este método
+     * se llama desde el callback del WebSocket (self-invocation + hilo no gestionado
+     * por Spring), lo que hace que @Transactional no se aplique.</p>
      */
-    @Transactional
     public void incrementBottleCount() {
         try {
-            // 1. Obtener orden activa (EN_PROCESO o PAUSADA sin fabricación parcial)
-            Optional<Order> activeOrderOpt = orderQueryService.getActiveVisibleOrderEntity();
+            transactionTemplate.execute(status -> {
+                // 1. Obtener orden EN_PROCESO (solo EN_PROCESO, no PAUSADA)
+                List<Order> enProcesoOrders = orderRepository.findByEstadoIn(
+                        List.of(EstadoOrder.EN_PROCESO)
+                );
 
-            if (activeOrderOpt.isEmpty()) {
-                log.debug("⏸️ No hay orden activa, botella no contada");
-                return;
-            }
+                if (enProcesoOrders.isEmpty()) {
+                    log.debug("⏸️ No hay orden EN_PROCESO, botella no contada");
+                    return null;
+                }
 
-            Order activeOrder = activeOrderOpt.get();
-            Long orderId = activeOrder.getIdOrder();
+                // Tomar la más reciente por hora de inicio
+                Order activeOrder = enProcesoOrders.stream()
+                        .filter(o -> o.getHoraInicio() != null)
+                        .max((o1, o2) -> o1.getHoraInicio().compareTo(o2.getHoraInicio()))
+                        .orElse(enProcesoOrders.get(0));
 
-            // 2. Buscar o crear contador para esta orden
-            BottleCounter counter = bottleCounterRepository.findByIdOrder(orderId)
-                    .orElseGet(() -> createCounterForOrder(orderId));
+                Long orderId = activeOrder.getIdOrder();
 
-            // 3. Asegurarse de que está activo
-            if (!counter.getIsActive()) {
-                counter.setIsActive(true);
-            }
+                // 2. Buscar o crear contador para esta orden
+                BottleCounter counter = bottleCounterRepository.findByIdOrder(orderId)
+                        .orElseGet(() -> {
+                            BottleCounter newCounter = BottleCounter.builder()
+                                    .idOrder(orderId)
+                                    .quantity(0)
+                                    .isActive(true)
+                                    .build();
+                            return bottleCounterRepository.save(newCounter);
+                        });
 
-            // 4. Incrementar contador
-            counter.increment();
-            BottleCounter savedCounter = bottleCounterRepository.save(counter);
+                // 3. Asegurarse de que está activo
+                if (!counter.getIsActive()) {
+                    counter.setIsActive(true);
+                }
 
-            log.info("✅ Contador actualizado - Orden: {} | Cantidad: {}",
-                    activeOrder.getCodOrder(), savedCounter.getQuantity());
+                // 4. Incrementar contador
+                counter.increment();
+                BottleCounter savedCounter = bottleCounterRepository.save(counter);
 
-            // 5. Notificar al frontend
-            notifyCounterUpdate(savedCounter, activeOrder.getCodOrder());
+                log.info("✅ Contador actualizado - Orden: {} | Cantidad: {}",
+                        activeOrder.getCodOrder(), savedCounter.getQuantity());
 
+                // 5. Notificar al frontend
+                notifyCounterUpdate(savedCounter, activeOrder.getCodOrder());
+
+                return null;
+            });
         } catch (Exception e) {
             log.error("❌ Error al incrementar contador de botellas", e);
         }
@@ -287,13 +309,8 @@ public class BottleCounterService {
     public void activateCounterForOrder(Long orderId) {
         log.info("▶️ Activando contador para orden ID: {}", orderId);
 
-        // Desactivar todos los contadores previos
-        bottleCounterRepository.findAll().forEach(counter -> {
-            if (counter.getIsActive()) {
-                counter.setIsActive(false);
-                bottleCounterRepository.save(counter);
-            }
-        });
+        // Desactivar todos los contadores previos con una sola query
+        bottleCounterRepository.deactivateAllCounters();
 
         // Activar o crear contador para esta orden
         BottleCounter counter = bottleCounterRepository.findByIdOrder(orderId)
