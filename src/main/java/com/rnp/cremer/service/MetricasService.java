@@ -13,6 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Servicio para cálculo de métricas de producción.
@@ -192,6 +196,76 @@ float stdReal = tiempoActivo > 0 ? totalProducido / tiempoActivo : 0.0f;
 
         return savedMetricas;
     }
+
+
+    @Transactional
+public Map<String, Object> recalcularTodasMetricas() {
+    log.info("Recalculando métricas para todas las órdenes cerradas (FINALIZADA, ESPERA_MANUAL, PROCESO_MANUAL)");
+
+    List<Order> orders = orderRepository.findAll();
+
+    int total = 0;
+    int recalculadas = 0;
+    int saltadas = 0;
+    List<Map<String, Object>> detalles = new ArrayList<>();
+
+    for (Order order : orders) {
+        // Solo órdenes aptas
+        if (order.getEstado() != EstadoOrder.FINALIZADA
+                && order.getEstado() != EstadoOrder.ESPERA_MANUAL
+                && order.getEstado() != EstadoOrder.PROCESO_MANUAL) {
+            continue;
+        }
+
+        total++;
+
+        // Si no tiene inicio, no se puede
+        if (order.getHoraInicio() == null) {
+            saltadas++;
+            Map<String, Object> det = new HashMap<>();
+            det.put("idOrder", order.getIdOrder());
+            det.put("codOrder", order.getCodOrder());
+            det.put("status", "SKIPPED_NO_START_TIME");
+            detalles.add(det);
+            continue;
+        }
+
+        try {
+            recalcularMetricas(order.getIdOrder());
+            recalculadas++;
+
+            Map<String, Object> det = new HashMap<>();
+            det.put("idOrder", order.getIdOrder());
+            det.put("codOrder", order.getCodOrder());
+            det.put("status", "OK");
+            detalles.add(det);
+
+        } catch (Exception e) {
+            saltadas++;
+            Map<String, Object> det = new HashMap<>();
+            det.put("idOrder", order.getIdOrder());
+            det.put("codOrder", order.getCodOrder());
+            det.put("status", "ERROR");
+            det.put("error", e.getMessage());
+            detalles.add(det);
+
+            log.error("Error recalculando métricas para orden {} (ID {})", order.getCodOrder(), order.getIdOrder(), e);
+        }
+    }
+
+    Map<String, Object> result = new HashMap<>();
+    result.put("totalCandidatas", total);
+    result.put("recalculadas", recalculadas);
+    result.put("saltadas", saltadas);
+    result.put("detalles", detalles);
+
+    log.info("Recalculo métricas completado - totalCandidatas: {}, recalculadas: {}, saltadas: {}",
+            total, recalculadas, saltadas);
+
+    return result;
+}
+
+
 
     /**
      * Recalcula las métricas de una orden (útil si se modifican datos en BD).
