@@ -387,7 +387,7 @@ public Map<String, Object> recalcularTodasMetricas() {
         float oee = disponibilidad * rendimiento * calidad;
 
         // CÁLCULO 10: STD REAL
-        float stdReal = totalProducido > 0 ? tiempoActivo / totalProducido : 0.0f;
+float stdReal = tiempoActivo > 0 ? totalProducido / tiempoActivo : 0.0f;
 
         // CÁLCULO 11: CUMPLIMIENTO
         int botesBuenos = order.getBotesBuenos() != null ? order.getBotesBuenos() : 0;

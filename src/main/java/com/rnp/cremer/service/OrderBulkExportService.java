@@ -84,9 +84,14 @@ public class OrderBulkExportService {
             }
         }
 
-        if (metricas != null && metricas.getStdReal() != null && order.getStdReferencia() != null) {
-            stdRealVsStdRef = metricas.getStdReal() - order.getStdReferencia();
-        }
+   if (metricas != null
+        && metricas.getStdReal() != null
+        && order.getStdReferencia() != null
+        && order.getStdReferencia() > 0) {
+
+    // Ratio: STD Real / STD Referencia (ej: 0.62 = 62%)
+    stdRealVsStdRef = metricas.getStdReal() / order.getStdReferencia();
+}
 
 
         // 5. Construir DTO
