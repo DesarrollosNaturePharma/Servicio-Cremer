@@ -152,7 +152,7 @@ public class MetricasService {
         // CÁLCULO 10: STD REAL (minutos/unidad)
         // ===================================
         // Tiempo real que tomó producir cada unidad
-        float stdReal = totalProducido > 0 ? tiempoActivo / totalProducido : 0.0f;
+float stdReal = tiempoActivo > 0 ? totalProducido / tiempoActivo : 0.0f;
 
         // ===================================
         // CÁLCULO 11: PORCENTAJE CUMPLIMIENTO PEDIDO (0-1+)

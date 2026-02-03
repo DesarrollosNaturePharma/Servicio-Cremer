@@ -67,10 +67,15 @@ public class OrderExportService {
                 porcentajePausas = metricas.getTiempoPausado() / metricas.getTiempoTotal();
             }
 
-            if (metricas.getStdReal() != null && order.getStdReferencia() != null) {
-                // Diferencia: stdReal - stdReferencia (positivo = más lento, negativo = más rápido)
-                stdRealVsStdRef = metricas.getStdReal() - order.getStdReferencia();
-            }
+           if (metricas != null && metricas.getStdReal() != null
+        && order.getStdReferencia() != null && order.getStdReferencia() > 0) {
+
+    // Ratio: STD Real / STD Referencia (ej: 0.58 = 58%)
+    stdRealVsStdRef = metricas.getStdReal() / order.getStdReferencia();
+} else {
+    stdRealVsStdRef = null;
+}
+
         }
 
         // 6. Mapear pausas a DTO
@@ -242,9 +247,10 @@ public class OrderExportService {
 
         // SECCIÓN 5: ESTÁNDARES
         createSectionHeader(sheet, rowNum++, "ESTÁNDARES", headerStyle);
-        rowNum = addDataRow(sheet, rowNum, "STD Real (min/unidad)", formatDecimal(data.getStdReal()), dataStyle);
-        rowNum = addDataRow(sheet, rowNum, "STD Referencia (min/unidad)", formatDecimal(data.getStdReferencia()), dataStyle);
-        rowNum = addDataRow(sheet, rowNum, "Diferencia (Real - Ref)", formatDecimal(data.getStdRealVsStdRef()), dataStyle);
+       rowNum = addDataRow(sheet, rowNum, "STD Real (uds/min)", formatDecimal(data.getStdReal()), dataStyle);
+rowNum = addDataRow(sheet, rowNum, "STD Referencia (uds/min)", formatDecimal(data.getStdReferencia()), dataStyle);
+
+rowNum = addDataRow(sheet, rowNum, "STD Real vs STD Ref", formatPercentage(data.getStdRealVsStdRef()), dataStyle);
     }
 
     /**
