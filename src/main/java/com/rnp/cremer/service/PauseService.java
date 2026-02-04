@@ -72,6 +72,9 @@ public class PauseService {
         order.setEstado(EstadoOrder.PAUSADA);
         Order updatedOrder = orderRepository.save(order);
 
+        // Desactivar el contador de botellas mientras la orden está pausada
+        bottleCounterService.deactivateCounterForOrder(idOrder);
+
         log.info("Pausa creada con ID: {} - Orden {} cambiada a PAUSADA",
                 savedPause.getIdPausa(), order.getCodOrder());
 

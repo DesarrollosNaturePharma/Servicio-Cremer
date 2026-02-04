@@ -290,9 +290,9 @@ private Float calculateTiempoEstimado(Integer cantidad, Float stdReferencia) {
 
         order.setEstado(nuevoEstado);
         Order updatedOrder = orderRepository.save(order);
-        if (nuevoEstado == EstadoOrder.FINALIZADA) {
-            bottleCounterService.deactivateCounterForOrder(id);
-        }
+
+        // Desactivar el contador siempre al salir de EN_PROCESO (tanto FINALIZADA como ESPERA_MANUAL)
+        bottleCounterService.deactivateCounterForOrder(id);
         log.info("Orden {} procesada - Buenos: {}, Malos: {}, Cajas: {}, Estado: {}",
                 updatedOrder.getCodOrder(), dto.getBotesBuenos(),
                 dto.getBotesMalos(), dto.getTotalCajasCierre(), nuevoEstado);

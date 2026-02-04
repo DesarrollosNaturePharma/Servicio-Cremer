@@ -46,6 +46,7 @@ public class AcumulaService {
     private final OrderRepository orderRepository;
     private final OrderService orderService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final BottleCounterService bottleCounterService;
 
     // Constantes
     private static final String ORDER_NOT_FOUND_MSG = "Orden no encontrada con ID: %d";
@@ -180,13 +181,16 @@ public class AcumulaService {
         order.setEstado(EstadoOrder.FINALIZADA);
         Order updatedOrder = orderRepository.save(order);
 
+        // 5. Desactivar el contador de botellas
+        bottleCounterService.deactivateCounterForOrder(idOrder);
+
         log.info("Proceso manual finalizado para orden {} - Tiempo: {:.2f} min - Cajas: {}",
                 order.getCodOrder(), tiempoTotal, dto.getNumCajasManual());
 
-        // 5. Notificar vía WebSocket
+        // 6. Notificar vía WebSocket
         notifyManualProcessFinished(updatedOrder, estadoAnterior);
 
-        // 6. Retornar DTO
+        // 7. Retornar DTO
         return mapToResponseDto(savedAcumula, order.getCodOrder());
     }
 
