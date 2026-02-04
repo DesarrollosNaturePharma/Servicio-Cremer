@@ -38,7 +38,7 @@ public interface BottleCounterRepository extends JpaRepository<BottleCounter, Lo
     /**
      * Desactiva todos los contadores activos.
      */
-    @Modifying(clearAutomatically = true)
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE BottleCounter bc SET bc.isActive = false WHERE bc.isActive = true")
     void deactivateAllCounters();
 
