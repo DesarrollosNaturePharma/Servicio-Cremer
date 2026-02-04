@@ -261,11 +261,7 @@ public class BottleCounterService {
 
         // Detectar flanco de bajada (1 → 0)
         if (previousValue != null && previousValue == 1 && value == 0) {
-            log.info("Botella detectada - Pin {} cambió de 1 -> 0", pin);
             incrementBottleCount();
-        } else {
-            log.debug("Estado GPIO - Pin {}: {} -> {} (no es flanco de bajada)",
-                    pin, previousValue, value);
         }
     }
 
@@ -293,7 +289,6 @@ public class BottleCounterService {
                 );
 
                 if (enProcesoOrders.isEmpty()) {
-                    log.debug("No hay orden EN_PROCESO, botella no contada");
                     return null;
                 }
 
@@ -324,9 +319,6 @@ public class BottleCounterService {
                 // 4. Incrementar contador
                 counter.increment();
                 BottleCounter saved = bottleCounterRepository.save(counter);
-
-                log.info("Contador actualizado - Orden: {} | Cantidad: {}",
-                        activeOrder.getCodOrder(), saved.getQuantity());
 
                 // Guardar resultado para notificación fuera de la transacción
                 result[0] = saved;
@@ -467,7 +459,6 @@ public class BottleCounterService {
                 event
         );
 
-        log.debug("Notificación WebSocket enviada - Cantidad: {}", counter.getQuantity());
     }
 
     // ========================================
